@@ -10,4 +10,9 @@ module.exports = {
       res.status(500).send(err.message);
     }
   },
+  updatedUserCoin: async (req, res) => {
+    await User.updateMany({}, { coin: 0 });
+
+    res.status(200).send('Coin updated successfully');
+  },
 };

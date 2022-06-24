@@ -5,7 +5,7 @@ module.exports = {
     try {
       const { id } = req.params;
 
-      const team = await Team.findOne({ id }).populate('member');
+      const team = await Team.findOne({ id }).populate({ path: 'members', select: 'user_id', populate: 'user' });
 
       res.status(200).send(team);
     } catch (err) {

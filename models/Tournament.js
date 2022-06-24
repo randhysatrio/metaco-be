@@ -41,7 +41,7 @@ const tournamentSchema = new Schema(
 
 tournamentSchema.virtual('results', {
   ref: 'Tournament_Result',
-  localField: '_id',
+  localField: 'id',
   foreignField: 'tournament_id',
 });
 
