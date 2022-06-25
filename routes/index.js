@@ -1,11 +1,9 @@
 const userRouter = require('./userRouter');
-const teamMemberRouter = require('./teamMemberRouter');
-const teamRouter = require('./teamRouter');
+const explorerRouter = require('./explorerRouter');
 const tournamentRouter = require('./tournamentRouter');
 
 module.exports = {
   userRouter,
-  teamMemberRouter,
-  teamRouter,
+  explorerRouter,
   tournamentRouter,
 };

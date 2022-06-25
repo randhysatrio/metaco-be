@@ -46,6 +46,12 @@ teamSchema.virtual('members', {
   foreignField: 'team_id',
 });
 
+teamSchema.virtual('results', {
+  ref: 'Tournament_Result',
+  localField: 'id',
+  foreignField: 'team_id',
+});
+
 const Team = model('Team', teamSchema, 'teams');
 
 module.exports = Team;

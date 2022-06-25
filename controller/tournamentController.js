@@ -70,13 +70,13 @@ module.exports = {
       const where = {};
 
       if (id) {
-        where._id = id;
+        where.id = id;
       }
 
       const options = {};
 
       if (withTeams) {
-        if (!options.hasOwnProperty('path')) {
+        if (!options.hasOwnProperty('populate')) {
           options.populate = [{ path: 'teams', populate: { path: 'members' } }];
         } else {
           options.populate.push({ path: 'teams', populate: { path: 'members' } });
@@ -89,14 +89,14 @@ module.exports = {
             {
               path: 'results',
               select: 'point position team_id',
-              populate: { path: 'team_id', select: 'name logo captain_id', populate: { path: 'captain', select: 'name' } },
+              populate: { path: 'team', select: 'name logo captain_id', populate: { path: 'captain', select: 'name' } },
             },
           ];
         } else {
           options.populate.push({
             path: 'results',
             select: 'point position team_id',
-            populate: { path: 'team_id', select: 'name logo captain_id', populate: { path: 'captain', select: 'name' } },
+            populate: { path: 'team', select: 'name logo captain_id', populate: { path: 'captain', select: 'name' } },
           });
         }
       }
@@ -105,6 +105,7 @@ module.exports = {
 
       res.status(200).send(tournament);
     } catch (err) {
+      console.log(err);
       res.status(500).send(err.message);
     }
   },
