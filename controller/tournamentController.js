@@ -89,6 +89,7 @@ module.exports = {
             {
               path: 'results',
               select: 'point position team_id',
+              options: { sort: { position: 1 } },
               populate: { path: 'team', select: 'name logo captain_id', populate: { path: 'captain', select: 'name' } },
             },
           ];
@@ -96,6 +97,7 @@ module.exports = {
           options.populate.push({
             path: 'results',
             select: 'point position team_id',
+            options: { sort: { position: 1 } },
             populate: { path: 'team', select: 'name logo captain_id', populate: { path: 'captain', select: 'name' } },
           });
         }
@@ -105,7 +107,6 @@ module.exports = {
 
       res.status(200).send(tournament);
     } catch (err) {
-      console.log(err);
       res.status(500).send(err.message);
     }
   },
@@ -114,9 +115,17 @@ module.exports = {
       const { id } = req.params;
       const { results } = req.body;
 
-      results.forEach(async (teamId, index) => {
-        const teamData = await Team.findOne({ id: parseInt(teamId) }).populate('members', 'user_id');
+      if (results.some((result) => !result)) {
+        return res.status(409).send('Tournament result invalid!');
+      }
 
+      const resultCheck = await TournamentResult.findOne({ tournament_id: id });
+
+      if (resultCheck) {
+        return res.status(409).send('This tournament results already created!');
+      }
+
+      results.forEach(async (teamId, index) => {
         let point;
 
         switch (index) {
@@ -134,18 +143,22 @@ module.exports = {
             break;
         }
 
-        if (index < 3 && teamData.members.length) {
-          teamData.members.forEach(async (member) => {
-            await User.findOneAndUpdate({ id: member.user_id }, { $inc: { coin: point } }).exec();
-          });
-        }
-
         await TournamentResult.create({
-          team_id: parseInt(teamData.id),
+          team_id: parseInt(teamId),
           tournament_id: parseInt(id),
           position: index + 1,
           point,
         });
+
+        if (index < 3) {
+          const teamData = await Team.findOne({ id: parseInt(teamId) }).populate('members', 'user_id');
+
+          if (teamData.members.length) {
+            teamData.members.forEach(async (member) => {
+              await User.findOneAndUpdate({ id: member.user_id }, { $inc: { coin: point } }).exec();
+            });
+          }
+        }
       });
 
       res.status(200).send('Tournament result created successfully!');
@@ -156,6 +169,12 @@ module.exports = {
   deleteResult: async (req, res) => {
     try {
       const { id } = req.params;
+
+      const existingResult = await TournamentResult.findOne({ tournament_id: id });
+
+      if (!existingResult) {
+        return res.status(409).send('This tournament has no results!');
+      }
 
       const results = await TournamentResult.find({ tournament_id: id }).populate({
         path: 'team',
@@ -174,7 +193,7 @@ module.exports = {
 
       res.status(200).send('Results deleted successfully!');
     } catch (err) {
-      res.status(500).send(err);
+      res.status(500).send(err.message);
     }
   },
 };

@@ -63,11 +63,51 @@ module.exports = {
       res.status(500).send(err.message);
     }
   },
-  getTeam: async (req, res) => {
+  getTeamById: async (req, res) => {
     try {
       const { id } = req.params;
+      const { withCaptain, withMembers } = req.query;
 
-      const team = await Team.findOne({ id }).populate({ path: 'members', select: 'user_id', populate: 'user' });
+      const pipeline = [{ $match: { id: parseInt(id) } }, { $project: { created_at: 0, updated_at: 0 } }];
+
+      if (withCaptain) {
+        pipeline.push({
+          $lookup: {
+            from: 'users',
+            localField: 'captain_id',
+            foreignField: 'id',
+            as: 'captain',
+            pipeline: [{ $project: { created_at: 0, updated_at: 0 } }],
+          },
+        });
+        pipeline.push({ $unwind: '$captain' });
+      }
+
+      if (withMembers) {
+        pipeline.push({
+          $lookup: {
+            from: 'team_members',
+            localField: 'id',
+            foreignField: 'team_id',
+            as: 'members',
+            pipeline: [
+              {
+                $lookup: {
+                  from: 'users',
+                  localField: 'user_id',
+                  foreignField: 'id',
+                  as: 'user',
+                  pipeline: [{ $project: { created_at: 0, updated_at: 0, id: 0 } }],
+                },
+              },
+              { $unwind: '$user' },
+              { $project: { created_at: 0, updated_at: 0, team_id: 0, id: 0 } },
+            ],
+          },
+        });
+      }
+
+      const team = await Team.aggregate(pipeline);
 
       res.status(200).send(team);
     } catch (err) {
