@@ -10,9 +10,8 @@ app.use(express.json());
 
 (() => mongoose.connect(process.env.MONGODB_URI).then(() => console.log('Mongoose connected successfully!')))();
 
-const { userRouter, explorerRouter, tournamentRouter } = require('./routes');
+const { explorerRouter, tournamentRouter } = require('./routes');
 
-app.use('/user', userRouter);
 app.use('/explorer', explorerRouter);
 app.use('/tournament', tournamentRouter);
 
