@@ -41,6 +41,7 @@ module.exports = {
             localField: 'id',
             foreignField: 'team_id',
             as: 'members',
+            pipeline: [{ $sort: { roles: 1 } }],
           },
         });
       }
@@ -98,6 +99,7 @@ module.exports = {
             foreignField: 'team_id',
             as: 'members',
             pipeline: [
+              { $sort: { roles: 1 } },
               {
                 $lookup: {
                   from: 'users',
@@ -158,6 +160,7 @@ module.exports = {
 
       res.status(200).send(response);
     } catch (err) {
+      console.log(err);
       res.status(500).send(err);
     }
   },

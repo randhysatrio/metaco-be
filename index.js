@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 
 const app = require('express')();
 
-app.use(cors({ origin: 'http://localhost:3000', methods: 'GET,PUT,POST,PATCH,DELETE' }));
+app.use(cors());
 app.use(express.json());
 
 (() => mongoose.connect(process.env.MONGODB_URI).then(() => console.log('Mongoose connected successfully!')))();
