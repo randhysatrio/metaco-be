@@ -1,10 +1,11 @@
 const Team = require('../models/Team');
 const TeamMember = require('../models/TeamMember');
+const TournamentResult = require('../models/TournamentResult');
 
 module.exports = {
   getTeams: async (req, res) => {
     try {
-      const { search, limit, page, withMembers, withResults } = req.query;
+      const { search, limit, page, withMembers, withResults, sort } = req.query;
 
       const where = {};
 
@@ -44,6 +45,12 @@ module.exports = {
         });
       }
 
+      if (sort) {
+        const sortInput = sort.split(',');
+
+        pipeline.push({ $sort: { [sortInput[0]]: sortInput[1] === 'asc' ? 1 : -1 } });
+      }
+
       if (limit && page) {
         pipeline.push({ $skip: limit * page - limit });
       }
@@ -60,13 +67,13 @@ module.exports = {
 
       res.status(200).send({ count, results, maxPage });
     } catch (err) {
-      res.status(500).send(err.message);
+      res.status(500).send(err);
     }
   },
   getTeamById: async (req, res) => {
     try {
       const { id } = req.params;
-      const { withCaptain, withMembers } = req.query;
+      const { withCaptain, withMembers, withResults, withTopThrees, withFirstPlaces } = req.query;
 
       const pipeline = [{ $match: { id: parseInt(id) } }, { $project: { created_at: 0, updated_at: 0 } }];
 
@@ -107,16 +114,56 @@ module.exports = {
         });
       }
 
+      if (withResults) {
+        pipeline.push({
+          $lookup: {
+            from: 'tournament_results',
+            localField: 'id',
+            foreignField: 'team_id',
+            as: 'results',
+            pipeline: [
+              {
+                $lookup: {
+                  from: 'tournaments',
+                  localField: 'tournament_id',
+                  foreignField: 'id',
+                  as: 'tournament',
+                },
+              },
+              { $unwind: '$tournament' },
+              { $limit: 10 },
+            ],
+          },
+        });
+        pipeline.push({
+          $addFields: {
+            totalPoints: { $sum: '$results.point' },
+          },
+        });
+      }
+
+      pipeline.push({ $limit: 1 });
+
       const team = await Team.aggregate(pipeline);
 
-      res.status(200).send(team);
+      const response = { team: team[0] };
+
+      if (withTopThrees) {
+        response.topthrees = await TournamentResult.countDocuments({ team_id: id, position: { $lte: 4 } });
+      }
+
+      if (withFirstPlaces) {
+        response.firstplaces = await TournamentResult.countDocuments({ team_id: id, position: { $eq: 1 } });
+      }
+
+      res.status(200).send(response);
     } catch (err) {
-      res.status(500).send(err.message);
+      res.status(500).send(err);
     }
   },
   getPlayers: async (req, res) => {
     try {
-      const { search, limit, page, withUser } = req.query;
+      const { search, limit, page, withUser, sort } = req.query;
 
       const where = {};
 
@@ -143,6 +190,12 @@ module.exports = {
         pipeline.push({ $unwind: '$user' });
       }
 
+      if (sort) {
+        const sortInput = sort.split(',');
+
+        pipeline.push({ $sort: { [sortInput[0]]: sortInput[1] === 'asc' ? -1 : 1 } });
+      }
+
       if (limit && page) {
         pipeline.push({ $skip: parseInt(limit * page - limit) });
       }
@@ -167,7 +220,7 @@ module.exports = {
 
       res.status(200).send({ results, count, maxPage });
     } catch (err) {
-      res.status(500).send(err.message);
+      res.status(500).send(err);
     }
   },
 };
