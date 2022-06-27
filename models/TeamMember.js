@@ -23,6 +23,10 @@ const teamMemberSchema = new Schema(
       },
       required: true,
     },
+    ingame_id: {
+      type: String,
+      required: true,
+    },
   },
   {
     timestamps: {

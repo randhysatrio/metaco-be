@@ -160,7 +160,6 @@ module.exports = {
 
       res.status(200).send(response);
     } catch (err) {
-      console.log(err);
       res.status(500).send(err);
     }
   },
@@ -209,15 +208,7 @@ module.exports = {
 
       const results = await TeamMember.aggregate(pipeline);
 
-      let count;
-
-      if (search) {
-        const query = await TeamMember.aggregate([pipeline[0], { $count: 'totalData' }]);
-
-        count = query[0].totalData;
-      } else {
-        count = await TeamMember.estimatedDocumentCount();
-      }
+      const count = await TeamMember.countDocuments(where);
 
       const maxPage = Math.ceil(count / limit) || 1;
 
